@@ -21,7 +21,7 @@ func (mgi *MenuGroupItem) Add(m *TunnelMenuItem) {
 }
 
 func (mgi *MenuGroupItem) Start(ctx context.Context) {
-	mgi.item.SetTitle("Switch")
+	mgi.item.SetTitle("Switch All")
 
 	for _, item := range mgi.items {
 		go item.Start(ctx)
@@ -50,6 +50,7 @@ func (mgi *MenuGroupItem) switchState(ctx context.Context) {
 			}
 		}
 	}
+	mgi.lastState = mgi.nextState()
 }
 func (mgi *MenuGroupItem) nextState() int {
 	if mgi.lastState == tunnel.StopStatus {

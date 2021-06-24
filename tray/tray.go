@@ -25,6 +25,8 @@ func OnReady() {
 	systray.AddSeparator()
 	mQuit := systray.AddMenuItem("Quit", "Quit example tray application")
 
+	group := NewMenuGroupItem(dev.AddSubMenuItem("", ""))
+	systray.AddSeparator()
 	{
 
 		item := dev.AddSubMenuItem("Start MySQL", "MySQL")
@@ -40,7 +42,8 @@ func OnReady() {
 			Host: "54.213.148.49",
 			Port: 16889,
 		})
-		go tunItem.Start(ctx)
+		group.Add(tunItem)
+		//go tunItem.Start(ctx)
 	}
 	{
 		item := dev.AddSubMenuItem("Start Redis", "Redis")
@@ -54,7 +57,8 @@ func OnReady() {
 			Host: "54.213.148.49",
 			Port: 16889,
 		})
-		go tunItem.Start(ctx)
+		group.Add(tunItem)
+		//go tunItem.Start(ctx)
 	}
 	{
 		item := dev.AddSubMenuItem("Start RabbitMQ", "RabbitMQ")
@@ -68,8 +72,10 @@ func OnReady() {
 			Host: "54.213.148.49",
 			Port: 16889,
 		})
-		go tunItem.Start(ctx)
+		group.Add(tunItem)
+		//go tunItem.Start(ctx)
 	}
+	go group.Start(ctx)
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)

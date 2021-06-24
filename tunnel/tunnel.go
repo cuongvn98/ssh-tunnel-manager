@@ -134,7 +134,6 @@ func NewSSHTunnel(user string, local, remote, server Endpoint) *SSHtunnel {
 func (tunnel *SSHtunnel) Start(ctx context.Context) error {
 	tunnel.Status = StartingStatus
 	tunnel.fire(tunnel.Status)
-	logrus.Info(tunnel.Status, "start")
 	listener, err := net.Listen("tcp", tunnel.Local.String())
 	if err != nil {
 		return err
@@ -161,7 +160,6 @@ func (tunnel *SSHtunnel) Start(ctx context.Context) error {
 	var errs = make(chan error)
 	tunnel.Status = RunningStatus
 	tunnel.fire(tunnel.Status)
-	logrus.Info(tunnel.Status, "running")
 
 	logrus.Infof("Tunnel to %s is started", tunnel.Local.String())
 
