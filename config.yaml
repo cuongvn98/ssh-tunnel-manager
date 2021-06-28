@@ -1,0 +1,84 @@
+groups:
+  - name: Dev
+    services:
+      - name: MySQL
+        username: cuongvu
+        local:
+          host: localhost
+          port: 3306
+        remote:
+          host: localhost
+          port: 3306
+        server:
+          host: 54.213.148.49
+          port: 16889
+      - name: RabbitMQ
+        username: cuongvu
+        local:
+          host: localhost
+          port: 5672
+        remote:
+          host: localhost
+          port: 5672
+        server:
+          host: 54.213.148.49
+          port: 16889
+      - name: Redis
+        username: cuongvu
+        localhost:
+          host: localhost
+          port: 6379
+        remote:
+          host: localhost
+          port: 6379
+        server:
+          host: 54.213.148.49
+          port: 16889
+  - name: Staging
+    services:
+      - name: MySQL
+        username: cuongvu
+        local:
+          host: localhost
+          port: 3306
+        remote:
+          host: localhost
+          port: 3306
+        server:
+          host: 54.245.86.188
+          port: 16889
+      - name: RabbitMQ
+        username: cuongvu
+        local:
+          host: localhost
+          port: 5672
+        remote:
+          host: localhost
+          port: 5672
+        server:
+          host: 54.245.86.188
+          port: 16889
+      - name: Redis
+        username: cuongvu
+        localhost:
+          host: localhost
+          port: 6379
+        remote:
+          host: localhost
+          port: 6379
+        server:
+          host: 54.245.86.188
+          port: 16889
+  - name: Production
+    services:
+      - name: MySQL
+        username: cuongvu
+        local:
+          host: localhost
+          port: 3306
+        remote:
+          host: localhost
+          port: 3306
+        server:
+          host: 54.203.28.24
+          port: 16889

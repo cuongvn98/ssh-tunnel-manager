@@ -1,38 +1,29 @@
 package main
 
 import (
+	"fmt"
 	"github.com/getlantern/systray"
+	"github.com/spf13/viper"
+	"ocg-ssh-tunnel/config"
 	"ocg-ssh-tunnel/tray"
 )
 
 func main() {
 
-	systray.Run(tray.OnReady, tray.OnQuit)
+	viper.SetConfigName("config")           // name of config file (without extension)
+	viper.SetConfigType("yaml")             // REQUIRED if the config file does not have the extension in the name
+	viper.AddConfigPath("/etc/ocgtunnel/")  // path to look for the config file in
+	viper.AddConfigPath("$HOME/.ocgtunnel") // call multiple times to add many search paths
+	viper.AddConfigPath(".")                // optionally look for config in the working directory
+	err := viper.ReadInConfig()             // Find and read the config file
+	if err != nil {                         // Handle errors reading the config file
+		panic(fmt.Errorf("Fatal error config file: %w \n", err))
+	}
+	var cfg config.Config
+	if err := viper.Unmarshal(&cfg); err != nil {
+		panic(fmt.Errorf("Can't load config file: %w \n", err))
+	}
 
-	//tun := tunnel.NewSSHTunnel("cuongvu", tunnel.Endpoint{
-	//	Host: "localhost",
-	//	Port: 3306,
-	//}, tunnel.Endpoint{
-	//	Host: "localhost",
-	//	Port: 3306,
-	//}, tunnel.Endpoint{
-	//	Host: "54.213.148.49",
-	//	Port: 16889,
-	//})
-	//
-	//ctx := context.Background()
-	//ctx, cancel := context.WithCancel(ctx)
-	//
-	//err := tun.Start(ctx)
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//
-	//c := make(chan os.Signal)
-	//signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
-	//<-c
-	//cancel()
-	//time.Sleep(1000)
+	systray.Run(tray.OnReady(cfg.Groups), tray.OnQuit)
 
 }

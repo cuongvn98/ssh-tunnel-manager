@@ -8,6 +8,7 @@ import (
 	"golang.org/x/crypto/ssh/agent"
 	"io"
 	"net"
+	"ocg-ssh-tunnel/config"
 	"os"
 	"time"
 )
@@ -82,6 +83,13 @@ type Endpoint struct {
 	Port int
 }
 
+func TransfromEndpointFromConfig(cfg config.Endpoint) Endpoint {
+	return Endpoint{
+		Host: cfg.Host,
+		Port: cfg.Port,
+	}
+}
+
 func (endpoint *Endpoint) String() string {
 	return fmt.Sprintf("%s:%d", endpoint.Host, endpoint.Port)
 }
@@ -133,7 +141,13 @@ func NewSSHTunnel(user string, local, remote, server Endpoint) *SSHtunnel {
 
 func (tunnel *SSHtunnel) Start(ctx context.Context) error {
 	tunnel.Status = StartingStatus
-	tunnel.fire(tunnel.Status)
+	tunnel.fire(tunnel.Status, "")
+	defer func() {
+		logrus.Infof("Tunnel to %s is stopped", tunnel.Local.String())
+		tunnel.Status = StopStatus
+		tunnel.fire(StopStatus, "")
+		tunnel.Hook.UnSubscribe()
+	}()
 	listener, err := net.Listen("tcp", tunnel.Local.String())
 	if err != nil {
 		return err
@@ -147,19 +161,12 @@ func (tunnel *SSHtunnel) Start(ctx context.Context) error {
 		}
 	}(listener)
 
-	defer func() {
-		logrus.Infof("Tunnel to %s is stopped", tunnel.Local.String())
-		tunnel.Status = StopStatus
-		tunnel.fire(StopStatus)
-		tunnel.Hook.UnSubscribe()
-	}()
-
 	if err := tunnel.pool.Start(ctx); err != nil {
 		return err
 	}
 	var errs = make(chan error)
 	tunnel.Status = RunningStatus
-	tunnel.fire(tunnel.Status)
+	tunnel.fire(tunnel.Status, "")
 
 	logrus.Infof("Tunnel to %s is started", tunnel.Local.String())
 
@@ -178,7 +185,7 @@ func (tunnel *SSHtunnel) Start(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil
+			return ctx.Err()
 		case <-tunnel.exit:
 			return nil
 		case err := <-errs:

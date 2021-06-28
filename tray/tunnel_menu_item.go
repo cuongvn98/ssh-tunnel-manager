@@ -3,6 +3,7 @@ package tray
 import (
 	"context"
 	"fmt"
+	"github.com/gen2brain/beeep"
 	"github.com/getlantern/systray"
 	"github.com/sirupsen/logrus"
 	"ocg-ssh-tunnel/tunnel"
@@ -29,16 +30,22 @@ func NewTunnelMenuItem(
 		//state:     state,
 		lastState: tunnel.StopStatus,
 	}
-	hook := func(status int) {
+	hook := func(status int, extraData string) {
 		t.lastState = status
+		var msg string
 		switch status {
 		case tunnel.StartingStatus:
-			item.SetTitle(fmt.Sprintf("Starting %s ...", name))
+			msg = fmt.Sprintf("Starting %s ...", name)
+			item.SetTitle(msg)
 		case tunnel.RunningStatus:
-			item.SetTitle(fmt.Sprintf("Stop %s", name))
+			msg = fmt.Sprintf("Start %s", name)
+			item.SetTitle(msg)
 		case tunnel.StopStatus:
-			item.SetTitle(fmt.Sprintf("Start %s", name))
+			msg = fmt.Sprintf("Stop %s", name)
+			item.SetTitle(msg)
 		}
+
+		_ = beeep.Notify("SSH Tunnel", msg, "icon/icon.png")
 	}
 
 	state := tunnel.NewStateMachine(username, endpoint, remote, server, hook)

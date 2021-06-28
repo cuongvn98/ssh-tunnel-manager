@@ -10,11 +10,11 @@ type StateMachine struct {
 	local    Endpoint
 	remote   Endpoint
 	server   Endpoint
-	hook     func(int)
+	hook     func(int, string)
 	tunnel   *SSHtunnel
 }
 
-func NewStateMachine(username string, local Endpoint, remote Endpoint, server Endpoint, hook func(int)) *StateMachine {
+func NewStateMachine(username string, local Endpoint, remote Endpoint, server Endpoint, hook func(int, string)) *StateMachine {
 	return &StateMachine{username: username, local: local, remote: remote, server: server, hook: hook}
 }
 
