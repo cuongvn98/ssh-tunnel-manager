@@ -70,6 +70,7 @@ groups:
           host: 54.245.86.188
           port: 16889
   - name: Production
+    disable_switch_all: true
     services:
       - name: MySQL
         username: cuongvu

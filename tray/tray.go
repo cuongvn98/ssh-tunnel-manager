@@ -27,7 +27,10 @@ func OnReady(groups []config.Group) func() {
 		for _, groupData := range groups {
 			dev := systray.AddMenuItem(groupData.Name, "")
 			systray.AddSeparator()
-			group := NewMenuGroupItem(dev.AddSubMenuItem("", ""))
+			var group *MenuGroupItem
+			if !groupData.DisableSwitchAll {
+				group = NewMenuGroupItem(dev.AddSubMenuItem("", ""))
+			}
 			for _, service := range groupData.Services {
 
 				item := dev.AddSubMenuItem(service.Name, "")
@@ -40,9 +43,16 @@ func OnReady(groups []config.Group) func() {
 					tunnel.TransfromEndpointFromConfig(service.Remote),
 					tunnel.TransfromEndpointFromConfig(service.Server),
 				)
-				group.Add(tunItem)
+				if groupData.DisableSwitchAll {
+					go tunItem.Start(ctx)
+				} else {
+					group.Add(tunItem)
+				}
 			}
-			go group.Start(ctx)
+
+			if !groupData.DisableSwitchAll {
+				go group.Start(ctx)
+			}
 		}
 
 		mQuit := systray.AddMenuItem("Quit", "")

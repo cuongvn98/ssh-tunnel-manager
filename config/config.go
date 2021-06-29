@@ -17,8 +17,9 @@ type Service struct {
 }
 
 type Group struct {
-	Name     string    `json:"name"`
-	Services []Service `json:"services"`
+	Name             string    `json:"name"`
+	Services         []Service `json:"services"`
+	DisableSwitchAll bool      `json:"disable_switch_all" mapstructure:"disable_switch_all"`
 }
 
 type Config struct {
