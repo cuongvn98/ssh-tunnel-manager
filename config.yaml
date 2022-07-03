@@ -1,0 +1,17 @@
+servers:
+  - server_address: 172.16.20.211:22
+    user: linh
+    identity_file: /Users/hirosume/.ssh/id_rsa_origin
+    host_key_checking: true
+    timeout: 10
+    endpoints:
+      - remote_address: www.google.com:80
+        local_address: localhost:8080
+#  - server_address: 172.16.20.211:22
+#    user: linh
+#    identity_file: /Users/hirosume/.ssh/id_rsa_origin
+#    host_key_checking: true
+#    timeout: 10
+#    endpoints:
+#      - remote_address: 10.196.32.17:5432
+#        local_address: localhost:5432
