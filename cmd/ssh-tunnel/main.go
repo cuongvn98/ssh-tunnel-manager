@@ -1,28 +1,50 @@
 package main
 
 import (
+	"context"
+	"io"
+	"log"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
+	"time"
 
 	"ssh-tunnel/config"
 	"ssh-tunnel/ssh"
 )
 
 func main() {
-	conf, err := config.LoadConfig("config.yaml")
+	conf, err := config.LoadConfig(filepath.Join(os.Getenv("HOME"), "ssh-tunnel.yaml"))
 	if err != nil {
 		panic(err)
 	}
 
-	clean, err := ssh.NewServers(conf.Servers)
+	if conf.Debug != nil && !*conf.Debug {
+		log.SetOutput(io.Discard)
+	}
+
+	tunnel, err := ssh.NewServers(conf.Servers)
 	if err != nil {
 		panic(err)
 	}
 
-	defer clean()
+	ctx, cancel := signal.NotifyContext(
+		context.Background(),
+		syscall.SIGINT,
+		syscall.SIGTERM,
+	)
+	defer cancel()
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	<-c
+	go tunnel.Start(ctx)
+
+	log.Println("start ssh tunnel")
+
+	<-ctx.Done()
+	log.Println("stop ssh tunnel")
+	err = tunnel.Stop()
+	if err != nil {
+		log.Printf("failed to stop tunnels: %v\n", err)
+	}
+	time.Sleep(time.Second)
 }

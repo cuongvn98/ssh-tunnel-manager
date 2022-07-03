@@ -1,4 +1,4 @@
-package logger
+package log_terminal
 
 import (
 	"fmt"
@@ -21,10 +21,10 @@ func Clear() {
 	stdout.Clear()
 }
 
-func Print(s string) (int, error) {
-	return fmt.Fprint(stdout, s)
+func Printf(format string, args ...any) {
+	_, _ = fmt.Fprintf(stdout, format, args...)
 }
 
-func Printf(format string, args ...any) (int, error) {
-	return fmt.Fprintf(stdout, format, args...)
+func Show() {
+	stdout.Print()
 }

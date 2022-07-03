@@ -1,3 +1,4 @@
+#debug: false
 servers:
   - server_address: 172.16.20.211:22
     user: linh

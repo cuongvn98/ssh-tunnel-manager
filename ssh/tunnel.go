@@ -2,10 +2,13 @@ package ssh
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/crypto/ssh"
 	"ssh-tunnel/config"
@@ -18,6 +21,9 @@ type TunnelConnection struct {
 
 	localAddress  string
 	remoteAddress string
+
+	totalReadBytes  int64
+	totalWriteBytes int64
 }
 
 func NewTunnelConnection(endpoint config.Endpoint, client *ssh.Client) (*TunnelConnection, error) {
@@ -40,7 +46,7 @@ func NewTunnelConnection(endpoint config.Endpoint, client *ssh.Client) (*TunnelC
 	}, nil
 }
 
-func (t *TunnelConnection) Tunnel(ctx context.Context) {
+func (t *TunnelConnection) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -61,7 +67,7 @@ func (t *TunnelConnection) Tunnel(ctx context.Context) {
 				continue
 			}
 
-			tunnel(conn, remoteConn)
+			t.tunnel(conn, remoteConn)
 		}
 	}
 }
@@ -70,69 +76,66 @@ func (t *TunnelConnection) Close() error {
 	return t.listener.Close()
 }
 
-func NewTunnel(c context.Context, endpoint config.Endpoint, server *ssh.Client) (func(), error) {
-	remote := endpoint.RemoteAddress
-	local := endpoint.LocalAddress
-
-	addr, err := net.ResolveTCPAddr("tcp", remote)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve remote address: %w", err)
-	}
-
-	listener, err := net.Listen("tcp", local)
-	if err != nil {
-		return nil, fmt.Errorf("failed to listen: %w", err)
-	}
-
-	log.Printf("listening on %s", local)
-
-	go func() {
-		for {
-			select {
-			case <-c.Done():
-				listener.Close()
-				log.Printf("stop listening %s %s", local, remote)
-				return
-			default:
-				conn, err := listener.Accept()
-				if err != nil {
-					log.Printf("accept error %s %s %v", local, remote, err)
-					continue
-				}
-
-				log.Printf("accept %s %s", local, remote)
-
-				remoteConn, err := server.DialTCP("tcp", nil, addr)
-				if err != nil {
-					log.Printf("dial error %s %s", local, remote)
-					continue
-				}
-
-				tunnel(conn, remoteConn)
-			}
-		}
-	}()
-
-	return func() {
-		listener.Close()
-	}, nil
-}
-
-func tunnel(localConn, remoteConn net.Conn) {
+func (t *TunnelConnection) tunnel(localConn, remoteConn net.Conn) {
 	wg := sync.WaitGroup{}
 	wg.Add(2)
 
-	copyConn := func(writer, reader net.Conn) {
+	copyConn := func(writer, reader net.Conn, bytesRecorder *int64) {
 		defer wg.Done()
-		CopyAndMeasureThroughput(writer, reader)
+		t.copyAndMeasureThroughput(writer, reader, bytesRecorder)
 	}
 
-	go copyConn(localConn, remoteConn)
-	go copyConn(remoteConn, localConn)
+	go copyConn(localConn, remoteConn, &t.totalReadBytes)
+	go copyConn(remoteConn, localConn, &t.totalWriteBytes)
 	go func() {
 		wg.Wait()
 		log.Printf("tunnel closed : %s %s", localConn.RemoteAddr(), remoteConn.RemoteAddr())
 		_ = localConn.Close()
 		_ = remoteConn.Close()
 	}()
+}
+
+func (t *TunnelConnection) copyAndMeasureThroughput(writer, reader net.Conn, recorder *int64) {
+	var err error
+	written := int64(0)
+	for {
+		buffer := pool.Get().([]byte)
+		bytesRead, readErr := reader.Read(buffer)
+		if bytesRead > 0 {
+			bytesWritten, writeErr := writer.Write(buffer[0:bytesRead])
+			if bytesWritten > 0 {
+				written += int64(bytesWritten)
+			}
+			if writeErr != nil {
+				err = writeErr
+				break
+			}
+			if bytesRead != bytesWritten {
+				err = io.ErrShortWrite
+				break
+			}
+		}
+		if errors.Is(readErr, io.EOF) {
+			break
+		}
+		if readErr != nil {
+			err = readErr
+			break
+		}
+		atomic.AddInt64(recorder, written)
+		written = 0
+	}
+	if err != nil {
+		log.Println("Tunneling connection produced an error", err)
+		return
+	}
+	atomic.AddInt64(recorder, written)
+}
+
+func (t *TunnelConnection) GetReadBytes() int64 {
+	return atomic.LoadInt64(&t.totalReadBytes)
+}
+
+func (t *TunnelConnection) GetWriteBytes() int64 {
+	return atomic.LoadInt64(&t.totalWriteBytes)
 }

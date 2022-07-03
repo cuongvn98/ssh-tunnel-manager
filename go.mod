@@ -9,6 +9,8 @@ require (
 )
 
 require (
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	golang.org/x/sys v0.0.0-20220702020025-31831981b65f // indirect
 )

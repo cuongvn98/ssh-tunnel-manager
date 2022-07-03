@@ -25,8 +25,13 @@ type Endpoint struct {
 	LocalAddress  string `yaml:"local_address"`
 }
 
+func (e Endpoint) GetHash() string {
+	return fmt.Sprintf("%s:%s", e.RemoteAddress, e.LocalAddress)
+}
+
 type Config struct {
 	Servers []Server `yaml:"servers"`
+	Debug   *bool    `yaml:"debug"`
 }
 
 func LoadConfig(path string) (*Config, error) {
